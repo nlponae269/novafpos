@@ -72,7 +72,7 @@ const Database = (() => {
 
   async function init() {
     if (typeof initSqlJs !== "function") throw new Error("не удалось загрузить SQLite");
-    SQL = await initSqlJs({ locateFile: f => SQLJS_URL + f });
+    SQL = await initSqlJs({ locateFile: f => (window.SQLJS_BASE ?? SQLJS_URL) + f });
     const saved = await idbGet();
     db = saved ? new SQL.Database(new Uint8Array(saved)) : new SQL.Database();
     migrate();

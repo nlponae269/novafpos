@@ -25,7 +25,19 @@
     --border: #2a313c;
     --accent: #4c8dff;
     --shadow: 0 8px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --text: #e6edf3;
+  --muted: #8b96a5;
+  --border: #2a313c;
+  --accent: #4c8dff;
+  --shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -41,6 +53,11 @@ body {
 }
 
 button { font: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+}
 
 h2 { font-size: 15px; margin: 0; font-weight: 650; }
 
@@ -50,7 +67,9 @@ h2 { font-size: 15px; margin: 0; font-weight: 650; }
 .app {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 32px 16px;
+  padding-block: 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid;
   grid-template-columns: 380px minmax(0, 1fr);
   gap: 32px;
@@ -265,7 +284,7 @@ h2 { font-size: 15px; margin: 0; font-weight: 650; }
   font-size: 13px;
 }
 .ghost:hover { border-color: var(--accent); }
-.ghost.danger:hover { border-color: var(--bad); color: var(--bad); }
+.ghost.danger:hover, .ghost.danger.confirm { border-color: var(--bad); color: var(--bad); }
 
 .test-cards {
   display: grid;
@@ -344,7 +363,7 @@ h2 { font-size: 15px; margin: 0; font-weight: 650; }
 @keyframes print { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
 
 @media (max-width: 860px) {
-  .app { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 16px; }
+  .app { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 16px; }
   .device-col { position: static; }
   .test-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .test-card { aspect-ratio: auto; min-height: 92px; padding: 10px; border-radius: 10px; gap: 10px; }

@@ -582,9 +582,25 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 
-  $("db-reset").addEventListener("click", async () => {
+  // Подтверждение прямо в интерфейсе: первое нажатие спрашивает, второе — очищает.
+  let resetTimer = null;
+  $("db-reset").addEventListener("click", async e => {
+    const btn = e.currentTarget;
     if (!Database.ready() || busy) return;
-    if (!confirm("Удалить все операции и смены из базы?")) return;
+    if (!resetTimer) {
+      btn.textContent = "Точно очистить?";
+      btn.classList.add("confirm");
+      resetTimer = setTimeout(() => {
+        resetTimer = null;
+        btn.textContent = "Очистить";
+        btn.classList.remove("confirm");
+      }, 4000);
+      return;
+    }
+    clearTimeout(resetTimer);
+    resetTimer = null;
+    btn.textContent = "Очистить";
+    btn.classList.remove("confirm");
     await Database.reset();
     $("receipt-card").hidden = true;
     refreshPanel();
