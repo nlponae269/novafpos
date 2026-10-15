@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NovaFPOS Terminal</title>
+  <meta name="description" content="Симулятор терминала в браузере со встроенной SQLite-базой данных.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="window">
+    <header class="titlebar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">guest@novafpos: ~</span>
+    </header>
+    <section id="terminal" class="terminal" aria-label="Терминал">
+      <div id="output" class="output" aria-live="polite"></div>
+      <div class="input-line">
+        <span id="prompt" class="prompt"></span>
+        <input id="input" class="input" type="text" autocomplete="off" autocapitalize="off"
+               spellcheck="false" aria-label="Ввод команды" autofocus>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+  <script src="db.js"></script>
+  <script src="fs.js"></script>
+  <script src="terminal.js"></script>
+</body>
+</html>
