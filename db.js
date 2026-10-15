@@ -1,9 +1,11 @@
-// Бесплатная база данных: SQLite (sql.js / WebAssembly), которая живёт в браузере
-// и сохраняется в IndexedDB. Никаких серверов и регистраций не нужно.
+// Бесплатная база данных: SQLite (sql.js / WebAssembly), которая работает в браузере
+// и сохраняется в IndexedDB. Сервер и регистрация не нужны.
 const Database = (() => {
+  const SQLJS_URL = "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/";
   const IDB_NAME = "novafpos";
   const IDB_STORE = "sqlite";
-  const IDB_KEY = "main.db";
+  const IDB_KEY = "pos.db";
+  let SQL = null;
   let db = null;
 
   function idb() {
@@ -39,38 +41,61 @@ const Database = (() => {
     } catch { return false; }
   }
 
-  function seed() {
+  function migrate() {
     db.run(`
-      CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
-      CREATE TABLE notes (id INTEGER PRIMARY KEY, title TEXT NOT NULL, body TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP);
-      INSERT INTO users (name, email) VALUES ('guest', 'guest@novafpos.local'), ('admin', 'admin@novafpos.local');
-      INSERT INTO notes (title, body) VALUES ('Привет', 'Это пример записи в базе данных.');
+      CREATE TABLE IF NOT EXISTS shifts (
+        id     INTEGER PRIMARY KEY,
+        opened TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+        closed TEXT
+      );
+      CREATE TABLE IF NOT EXISTS transactions (
+        id         INTEGER PRIMARY KEY,
+        shift_id   INTEGER NOT NULL REFERENCES shifts(id),
+        created    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+        type       TEXT NOT NULL CHECK (type IN ('sale', 'refund')),
+        method     TEXT NOT NULL CHECK (method IN ('card', 'cash', 'qr')),
+        amount     INTEGER NOT NULL,          -- в копейках
+        status     TEXT NOT NULL CHECK (status IN ('approved', 'declined')),
+        message    TEXT,
+        card       TEXT,
+        auth_code  TEXT,
+        rrn        TEXT,
+        cash_given INTEGER,
+        ref_id     INTEGER REFERENCES transactions(id),
+        refunded   INTEGER NOT NULL DEFAULT 0
+      );
     `);
+    if (!query("SELECT id FROM shifts WHERE closed IS NULL").length) {
+      db.run("INSERT INTO shifts DEFAULT VALUES");
+    }
   }
 
   async function init() {
-    if (typeof initSqlJs !== "function") throw new Error("sql.js не загрузился");
-    const SQL = await initSqlJs({
-      locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}`,
-    });
+    if (typeof initSqlJs !== "function") throw new Error("не удалось загрузить SQLite");
+    SQL = await initSqlJs({ locateFile: f => SQLJS_URL + f });
     const saved = await idbGet();
-    if (saved) {
-      db = new SQL.Database(new Uint8Array(saved));
-    } else {
-      db = new SQL.Database();
-      seed();
-      await save();
-    }
-    Database.SQL = SQL;
+    db = saved ? new SQL.Database(new Uint8Array(saved)) : new SQL.Database();
+    migrate();
+    await save();
   }
 
-  function exec(sql) {
-    if (!db) throw new Error("база данных ещё не готова");
-    const results = db.exec(sql);
-    const changes = db.getRowsModified();
-    // Сохраняем только если запрос мог что-то изменить.
-    if (!/^\s*(select|pragma|explain|with)\b/i.test(sql)) save();
-    return { results, changes };
+  function query(sql, params = []) {
+    const stmt = db.prepare(sql);
+    try {
+      stmt.bind(params);
+      const rows = [];
+      while (stmt.step()) rows.push(stmt.getAsObject());
+      return rows;
+    } finally {
+      stmt.free();
+    }
+  }
+
+  function run(sql, params = []) {
+    db.run(sql, params);
+    const id = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
+    save();
+    return id;
   }
 
   function save() {
@@ -79,20 +104,12 @@ const Database = (() => {
 
   async function reset() {
     db.close();
-    db = new Database.SQL.Database();
-    seed();
+    db = new SQL.Database();
+    migrate();
     await save();
   }
 
-  function exportBytes() { return db.export(); }
+  const exportBytes = () => db.export();
 
-  async function importBytes(bytes) {
-    const next = new Database.SQL.Database(bytes);
-    next.exec("SELECT name FROM sqlite_master LIMIT 1"); // проверка формата
-    db.close();
-    db = next;
-    await save();
-  }
-
-  return { init, exec, save, reset, exportBytes, importBytes, ready: () => !!db };
+  return { init, query, run, save, reset, exportBytes, ready: () => !!db };
 })();

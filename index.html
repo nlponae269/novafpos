@@ -3,29 +3,81 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NovaFPOS Terminal</title>
-  <meta name="description" content="Симулятор терминала в браузере со встроенной SQLite-базой данных.">
+  <title>NovaPOS Terminal</title>
+  <meta name="description" content="Симулятор платёжного терминала с журналом операций в базе SQLite.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="window">
-    <header class="titlebar">
-      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-      <span class="title">guest@novafpos: ~</span>
-    </header>
-    <section id="terminal" class="terminal" aria-label="Терминал">
-      <div id="output" class="output" aria-live="polite"></div>
-      <div class="input-line">
-        <span id="prompt" class="prompt"></span>
-        <input id="input" class="input" type="text" autocomplete="off" autocapitalize="off"
-               spellcheck="false" aria-label="Ввод команды" autofocus>
+  <main class="app">
+    <section class="device-col">
+      <div class="device" id="device">
+        <div class="device-top">
+          <span class="brand">NOVA<span>POS</span></span>
+          <span class="led" id="led" title="Статус"></span>
+        </div>
+
+        <div class="screen" id="screen" aria-live="polite"></div>
+
+        <button class="nfc" id="nfc" type="button" title="Зона бесконтактной оплаты">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7.5a6 6 0 0 1 0 9M12 5a9.5 9.5 0 0 1 0 14M15.5 2.5a13 13 0 0 1 0 19M5 10a2.5 2.5 0 0 1 0 4"/></svg>
+        </button>
+
+        <div class="keypad" id="keypad">
+          <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+          <button data-key="C" class="k-red" title="Отмена (Esc)">C</button>
+          <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+          <button data-key="BS" class="k-yellow" title="Стереть (Backspace)">&larr;</button>
+          <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+          <button data-key="OK" class="k-green k-tall" title="Подтвердить (Enter)">OK</button>
+          <button data-key="MENU" class="k-func" title="Меню (M)">&#8801;</button>
+          <button data-key="0">0</button><button data-key="00">00</button>
+        </div>
       </div>
+      <p class="device-hint">Можно пользоваться клавиатурой: цифры, Enter, Backspace, Esc, M — меню.</p>
     </section>
+
+    <aside class="panel">
+      <section class="card">
+        <header class="card-head">
+          <h2>Тестовые карты</h2>
+          <button class="ghost" id="sound" type="button" aria-pressed="true">Звук: вкл</button>
+        </header>
+        <p class="muted small">Когда терминал попросит карту, нажмите на нужную. PIN для всех карт: <b>1234</b>.
+          Сумма свыше 3 000 ₽ всегда требует PIN.</p>
+        <div class="test-cards" id="test-cards"></div>
+      </section>
+
+      <section class="card">
+        <header class="card-head">
+          <h2>Смена <span id="shift-no"></span></h2>
+          <span class="muted small" id="shift-opened"></span>
+        </header>
+        <div class="stats" id="stats"></div>
+      </section>
+
+      <section class="card">
+        <header class="card-head">
+          <h2>Журнал операций</h2>
+          <div class="row-actions">
+            <button class="ghost" id="db-export" type="button">Скачать базу</button>
+            <button class="ghost danger" id="db-reset" type="button">Очистить</button>
+          </div>
+        </header>
+        <div class="journal" id="journal"></div>
+      </section>
+
+      <section class="card" id="receipt-card" hidden>
+        <header class="card-head">
+          <h2>Чек</h2>
+          <button class="ghost" id="print" type="button">Печать</button>
+        </header>
+        <div class="receipt-slot"><pre class="receipt" id="receipt"></pre></div>
+      </section>
+    </aside>
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
   <script src="db.js"></script>
-  <script src="fs.js"></script>
-  <script src="terminal.js"></script>
+  <script src="pos.js"></script>
 </body>
 </html>
